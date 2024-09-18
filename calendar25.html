@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2025 Calendar with Custom Categories and Selective Reset</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            height: 100vh;
+            background-color: #f4f4f9;
+        }
+
+        .container {
+            display: flex;
+            gap: 20px;
+        }
+
+        .calendar {
+            width: 600px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            padding: 20px;
+            background-color: white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            position: relative;
+        }
+
+        .calendar h1 {
+            cursor: pointer;
+            padding: 10px;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+            margin: 0;
+        }
+
+        .month-button, .reset-button {
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            position: relative;
+        }
+
+        .reset-button {
+            background-color: #dc3545;
+        }
+
+        .reset-button.done {
+            background-color: #28a745;
+        }
+
+        .month-button:hover, .reset-button:hover {
+            background-color: #0056b3;
+        }
+
+        .month-options {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            background-color: white;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+            z-index: 10;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .month-option {
+            background-color: #f0f0f0;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 5px 0;
+            cursor: pointer;
+        }
+
+        .month-options.visible {
+            display: block;
+        }
+
+        .weekdays, .days {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+        }
+
+        .weekdays div, .day {
+            text-align: center;
+            padding: 10px;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        .weekdays div {
+            font-weight: bold;
+            background-color: #ddd;
+        }
+
+        .day {
+            background-color: #f9f9f9;
+            position: relative;
+        }
+
+        /* Allow multiple colors inside a day div */
+        .day-color {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 10%; /* Height changes dynamically */
+            border-radius: 5px;
+            z-index: 1; /* Make sure the color is behind the date */
+        }
+
+        .day .date {
+            position: relative;
+            z-index: 2; /* Ensure the date stays on top */
+            color: black;
+            font-weight: bold;
+        }
+
+        .comment-indicator {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background-color: #ff5050;
+            color: white;
+            padding: 2px 6px;
+            font-size: 10px;
+            border-radius: 50%;
+            display: none;
+        }
+
+        .comment-indicator.visible {
+            display: inline-block;
+        }
+
+        .category-options {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: white;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+            z-index: 100;
+            max-height: 300px;
+            overflow-y: auto;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .category-options.visible {
+            display: block;
+        }
+
+        .category-option {
+            padding: 10px;
+            cursor: pointer;
+            margin-bottom: 5px;
+            border-radius: 3px;
+        }
+
+        .comment-section {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 100%;
+            margin-left: 10px;
+            background-color: white;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+            z-index: 100;
+            width: 250px;
+        }
+
+        .comment-section.visible {
+            display: block;
+        }
+
+        .comment-section textarea {
+            width: 100%;
+            resize: none;
+            min-height: 60px;
+            overflow: hidden;
+        }
+
+        .empty {
+            background-color: transparent;
+        }
+
+        .comments {
+            font-size: 12px;
+            color: #333;
+            margin-top: 5px;
+        }
+
+        .categories-panel {
+            width: 300px;
+            padding: 20px;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .categories-panel h2 {
+            margin-top: 0;
+        }
+
+        .category-input {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .category-input input[type="text"], .category-input input[type="color"] {
+            flex: 1;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="calendar">
+            <div class="header">
+                <h1 id="monthYear">January 2025</h1>
+                <div style="position: relative;">
+                    <button class="month-button" id="monthSelectButton">Change Month</button>
+                    <div class="month-options" id="monthOptions">
+                        <div class="month-option" data-month="0">January</div>
+                        <div class="month-option" data-month="1">February</div>
+                        <div class="month-option" data-month="2">March</div>
+                        <div class="month-option" data-month="3">April</div>
+                        <div class="month-option" data-month="4">May</div>
+                        <div class="month-option" data-month="5">June</div>
+                        <div class="month-option" data-month="6">July</div>
+                        <div class="month-option" data-month="7">August</div>
+                        <div class="month-option" data-month="8">September</div>
+                        <div class="month-option" data-month="9">October</div>
+                        <div class="month-option" data-month="10">November</div>
+                        <div class="month-option" data-month="11">December</div>
+                    </div>
+                </div>
+                <button class="reset-button" id="resetButton">Reset Date</button>
+            </div>
+
+            <div class="weekdays">
+                <div>Sun</div>
+                <div>Mon</div>
+                <div>Tue</div>
+                <div>Wed</div>
+                <div>Thu</div>
+                <div>Fri</div>
+                <div>Sat</div>
+            </div>
+
+            <div class="days" id="daysContainer"></div>
+        </div>
+
+        <!-- Custom Categories Panel -->
+        <div class="categories-panel">
+            <h2>Custom Categories</h2>
+            <!-- 10 categories -->
+            <div class="category-input">
+                <input type="text" id="cat1Name" value="Work" placeholder="Category 1">
+                <input type="color" id="cat1Color" value="#ADD8E6">
+            </div>
+
+            <div class="category-input">
+                <input type="text" id="cat2Name" value="Workout" placeholder="Category 2">
+                <input type="color" id="cat2Color" value="#FFFF00">
+            </div>
+
+            <div class="category-input">
+                <input type="text" id="cat3Name" value="School" placeholder="Category 3">
+                <input type="color" id="cat3Color" value="#800080">
+            </div>
+
+            <div class="category-input">
+                <input type="text" id="cat4Name" value="Event" placeholder="Category 4">
+                <input type="color" id="cat4Color" value="#90EE90">
+            </div>
+
+            <div class="category-input">
+                <input type="text" id="cat5Name" value="Other" placeholder="Category 5">
+                <input type="color" id="cat5Color" value="#FFA07A">
+            </div>
+
+            <div class="category-input">
+                <input type="text" id="cat6Name" value="Travel" placeholder="Category 6">
+                <input type="color" id="cat6Color" value="#00CED1">
+            </div>
+
+            <div class="category-input">
+                <input type="text" id="cat7Name" value="Meeting" placeholder="Category 7">
+                <input type="color" id="cat7Color" value="#FF4500">
+            </div>
+
+            <div class="category-input">
+                <input type="text" id="cat8Name" value="Project" placeholder="Category 8">
+                <input type="color" id="cat8Color" value="#6A5ACD">
+            </div>
+
+            <div class="category-input">
+                <input type="text" id="cat9Name" value="Holiday" placeholder="Category 9">
+                <input type="color" id="cat9Color" value="#FFD700">
+            </div>
+
+            <div class="category-input">
+                <input type="text" id="cat10Name" value="Errand" placeholder="Category 10">
+                <input type="color" id="cat10Color" value="#ADFF2F">
+            </div>
+        </div>
+    </div>
+
+    <!-- Category options for selection -->
+    <div class="category-options" id="categoryOptions"></div>
+
+    <!-- Comment Section -->
+    <div class="comment-section" id="commentSection">
+        <textarea id="commentInput" placeholder="Add a comment (e.g., times, location)"></textarea>
+        <button id="saveComment">Save</button>
+    </div>
+
+    <script>
+        const categoryColors = {
+            cat1: document.getElementById('cat1Color').value,
+            cat2: document.getElementById('cat2Color').value,
+            cat3: document.getElementById('cat3Color').value,
+            cat4: document.getElementById('cat4Color').value,
+            cat5: document.getElementById('cat5Color').value,
+            cat6: document.getElementById('cat6Color').value,
+            cat7: document.getElementById('cat7Color').value,
+            cat8: document.getElementById('cat8Color').value,
+            cat9: document.getElementById('cat9Color').value,
+            cat10: document.getElementById('cat10Color').value,
+        };
+
+        const categoryNames = {
+            cat1: document.getElementById('cat1Name').value,
+            cat2: document.getElementById('cat2Name').value,
+            cat3: document.getElementById('cat3Name').value,
+            cat4: document.getElementById('cat4Name').value,
+            cat5: document.getElementById('cat5Name').value,
+            cat6: document.getElementById('cat6Name').value,
+            cat7: document.getElementById('cat7Name').value,
+            cat8: document.getElementById('cat8Name').value,
+            cat9: document.getElementById('cat9Name').value,
+            cat10: document.getElementById('cat10Name').value,
+        };
+
+        const savedCategories = JSON.parse(localStorage.getItem('calendarCategories')) || {};
+        const savedComments = JSON.parse(localStorage.getItem('calendarComments')) || {};
+        const daysContainer = document.getElementById('daysContainer');
+        const monthYearHeading = document.getElementById('monthYear');
+        const monthSelectButton = document.getElementById('monthSelectButton');
+        const monthOptions = document.getElementById('monthOptions');
+        const categoryOptions = document.getElementById('categoryOptions');
+        const commentSection = document.getElementById('commentSection');
+        const commentInput = document.getElementById('commentInput');
+        const saveCommentButton = document.getElementById('saveComment');
+        const resetButton = document.getElementById('resetButton');
+        let currentYear = 2025;
+        let currentMonth = 0; // Start with January 2025
+        let activeDay; // To store the currently clicked day
+        let resetMode = false; // Track whether reset mode is active
+
+        // Function to dynamically update the category options based on user input
+        function updateCategoryOptions(dayDiv) {
+            categoryOptions.innerHTML = ''; // Clear existing options
+            const dayKey = dayDiv.dataset.day;
+            const dayCategories = savedCategories[dayKey] || [];
+            
+            if (resetMode) {
+                // Show only categories currently applied to the day
+                dayCategories.forEach((category) => {
+                    const option = document.createElement('div');
+                    option.classList.add('category-option');
+                    option.textContent = categoryNames[category];
+                    option.style.backgroundColor = categoryColors[category];
+                    option.dataset.category = category;
+                    categoryOptions.appendChild(option);
+
+                    // Event listener for removing a category in reset mode
+                    option.addEventListener('click', () => {
+                        removeCategoryFromDay(dayDiv, category);
+                        categoryOptions.classList.remove('visible'); // Hide options after removing
+                    });
+                });
+            } else {
+                // Show all category options when not in reset mode
+                const categories = Object.keys(categoryNames);
+                categories.forEach((category) => {
+                    const option = document.createElement('div');
+                    option.classList.add('category-option');
+                    option.textContent = categoryNames[category];
+                    option.style.backgroundColor = categoryColors[category];
+                    option.dataset.category = category;
+                    categoryOptions.appendChild(option);
+
+                    // Event listener for selecting a category
+                    option.addEventListener('click', () => {
+                        const existingCategories = savedCategories[dayKey] || [];
+
+                        // Add new category if less than 10 categories are already added
+                        if (existingCategories.length < 10) {
+                            existingCategories.push(category);
+                            savedCategories[dayKey] = existingCategories;
+
+                            // Apply multiple colors by dividing the day box
+                            renderDayColors(dayDiv, existingCategories);
+                        }
+
+                        localStorage.setItem('calendarCategories', JSON.stringify(savedCategories));
+                        categoryOptions.classList.remove('visible'); // Hide options after selecting
+                    });
+                });
+            }
+        }
+
+        // Add event listeners for updating category names and colors dynamically
+        document.querySelectorAll('[id^=cat]').forEach(input => {
+            input.addEventListener('input', () => {
+                const id = input.id.replace('Color', '').replace('Name', '');
+                if (input.type === 'text') {
+                    categoryNames[id] = input.value;
+                } else if (input.type === 'color') {
+                    categoryColors[id] = input.value;
+                }
+                if (activeDay) updateCategoryOptions(activeDay);
+            });
+        });
+
+        // Function to apply multiple colors to the day box based on selected categories
+        function renderDayColors(dayDiv, categories) {
+            dayDiv.innerHTML = `<div class="date">${dayDiv.textContent}</div>`; // Clear previous category segments but keep the date
+
+            categories.forEach((category, index) => {
+                const colorDiv = document.createElement('div');
+                colorDiv.classList.add('day-color');
+                colorDiv.style.backgroundColor = categoryColors[category];
+                colorDiv.style.top = `${index * 10}%`; // Adjust the position for each category
+                colorDiv.style.height = `${100 / categories.length}%`; // Divide the day box
+                dayDiv.appendChild(colorDiv);
+            });
+
+            // Re-append the comment indicator if there was one
+            if (savedComments[dayDiv.dataset.day]) {
+                const commentIndicator = document.createElement('span');
+                commentIndicator.classList.add('comment-indicator', 'visible');
+                commentIndicator.textContent = 'C';
+                dayDiv.appendChild(commentIndicator);
+            }
+        }
+
+        // Function to update the calendar days based on the selected month and year
+        function updateCalendar() {
+            daysContainer.innerHTML = ''; // Clear the previous days
+
+            const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
+            const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+
+            // Update the heading
+            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+            monthYearHeading.textContent = `${monthNames[currentMonth]} ${currentYear}`;
+
+            // Add empty divs for days before the 1st of the month
+            for (let i = 0; i < firstDayOfMonth; i++) {
+                const emptyDiv = document.createElement('div');
+                emptyDiv.classList.add('empty');
+                daysContainer.appendChild(emptyDiv);
+            }
+
+            // Add day boxes
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayDiv = document.createElement('div');
+                dayDiv.classList.add('day');
+                dayDiv.dataset.day = `${currentYear}-${currentMonth + 1}-${day}`;
+                dayDiv.innerHTML = `<div class="date">${day}</div>`; // Set date inside the day div
+
+                // If categories exist in localStorage, apply the colors
+                const savedDayCategories = savedCategories[dayDiv.dataset.day];
+                if (savedDayCategories) {
+                    renderDayColors(dayDiv, savedDayCategories);
+                }
+
+                // If a comment exists, display the comment indicator
+                const savedComment = savedComments[dayDiv.dataset.day];
+                if (savedComment) {
+                    const commentIndicator = document.createElement('span');
+                    commentIndicator.classList.add('comment-indicator', 'visible');
+                    commentIndicator.textContent = 'C';
+                    dayDiv.appendChild(commentIndicator);
+                }
+
+                // Add event listener for clicking a day
+                dayDiv.addEventListener('click', (e) => {
+                    const rect = dayDiv.getBoundingClientRect();
+
+                    if (resetMode) {
+                        // Show only the categories applied to the day
+                        updateCategoryOptions(dayDiv);
+                    } else {
+                        // Show the full category list
+                        updateCategoryOptions(dayDiv);
+                    }
+
+                    // Toggle the visibility of the category options and comment section
+                    if (activeDay === dayDiv && categoryOptions.classList.contains('visible')) {
+                        categoryOptions.classList.remove('visible');
+                        commentSection.classList.remove('visible');
+                        activeDay = null;
+                    } else {
+                        // Show the category options below the clicked day
+                        categoryOptions.style.top = `${rect.bottom + window.scrollY}px`;
+                        categoryOptions.style.left = `${rect.left + window.scrollX}px`;
+                        categoryOptions.classList.add('visible');
+
+                        // Show the comment section to the right of the clicked day
+                        commentSection.style.top = `${rect.top + window.scrollY}px`;
+                        commentSection.style.left = `${rect.right + window.scrollX + 10}px`;
+                        commentSection.classList.add('visible');
+
+                        // If a comment already exists, prefill it in the textarea
+                        commentInput.value = savedComments[dayDiv.dataset.day] || "";
+
+                        activeDay = dayDiv; // Store the clicked day
+                    }
+                });
+
+                daysContainer.appendChild(dayDiv);
+            }
+        }
+
+        // Function to remove a specific category from a day
+        function removeCategoryFromDay(dayDiv, category) {
+            const dayKey = dayDiv.dataset.day;
+            const dayCategories = savedCategories[dayKey] || [];
+
+            // Remove the selected category from the day
+            const updatedCategories = dayCategories.filter(cat => cat !== category);
+            savedCategories[dayKey] = updatedCategories;
+
+            // If no categories left, remove the day from savedCategories
+            if (updatedCategories.length === 0) {
+                delete savedCategories[dayKey];
+            }
+
+            // Re-render the day colors with remaining categories
+            renderDayColors(dayDiv, updatedCategories);
+
+            // Update localStorage
+            localStorage.setItem('calendarCategories', JSON.stringify(savedCategories));
+        }
+
+        // Event listener for resetting dates
+        resetButton.addEventListener('click', () => {
+            resetMode = !resetMode; // Toggle reset mode
+
+            // Update the button text based on reset mode status
+            if (resetMode) {
+                resetButton.textContent = 'Done';
+                resetButton.classList.add('done');
+            } else {
+                resetButton.textContent = 'Reset Date';
+                resetButton.classList.remove('done');
+            }
+        });
+
+        // Event listener to save comments
+        saveCommentButton.addEventListener('click', () => {
+            const comment = commentInput.value;
+            const dayKey = activeDay.dataset.day;
+            const commentIndicator = activeDay.querySelector('.comment-indicator');
+
+            // Save the comment to localStorage
+            if (comment) {
+                savedComments[dayKey] = comment;
+                localStorage.setItem('calendarComments', JSON.stringify(savedComments));
+
+                // Show the comment indicator (C) next to the day
+                if (!commentIndicator) {
+                    const newCommentIndicator = document.createElement('span');
+                    newCommentIndicator.classList.add('comment-indicator', 'visible');
+                    newCommentIndicator.textContent = 'C';
+                    activeDay.appendChild(newCommentIndicator);
+                }
+            } else {
+                // Remove the comment if no text is entered
+                if (commentIndicator) {
+                    commentIndicator.remove();
+                }
+                delete savedComments[dayKey];
+                localStorage.setItem('calendarComments', JSON.stringify(savedComments));
+            }
+
+            // Hide the comment section after saving
+            commentSection.classList.remove('visible');
+        });
+
+        // Automatically resize the comment box based on content
+        commentInput.addEventListener('input', () => {
+            commentInput.style.height = 'auto';
+            commentInput.style.height = `${commentInput.scrollHeight}px`;
+        });
+
+        // Event listener to show/hide the month options when clicking the button
+        monthSelectButton.addEventListener('click', () => {
+            monthOptions.classList.toggle('visible');
+        });
+
+        // Event listener to update the calendar when a month is selected
+        document.querySelectorAll('.month-option').forEach(option => {
+            option.addEventListener('click', (e) => {
+                currentMonth = parseInt(option.dataset.month);
+                monthOptions.classList.remove('visible');
+                updateCalendar();
+            });
+        });
+
+        // Initialize the calendar with January 2025
+        updateCalendar();
+        updateCategoryOptions(); // Initial update for category options
+
+        // Hide dropdowns if clicked outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.day') && !e.target.closest('.category-options') && !e.target.closest('.comment-section')) {
+                categoryOptions.classList.remove('visible');
+                commentSection.classList.remove('visible');
+                activeDay = null; // Reset active day if clicked outside
+            }
+        });
+    </script>
+</body>
+</html>
